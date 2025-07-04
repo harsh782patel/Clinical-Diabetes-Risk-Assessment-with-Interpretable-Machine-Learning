@@ -32,8 +32,8 @@ This project develops a machine learning system to predict diabetes risk using c
 
 1. Clone repository:
 ```bash
-git clone https://github.com/yourusername/diabetes-risk-assessment.git
-cd diabetes-risk-assessment
+git clone https://github.com/harsh782patel/Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning.git
+cd Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning
 ```
 
 2. Install dependencies:
@@ -46,7 +46,7 @@ pip install -r requirements.txt
 ### Running the Full Analysis
 Execute the Jupyter notebook for complete EDA, modeling and evaluation:
 ```bash
-jupyter notebook notebooks/Diabetes_Prediction_Analysis.ipynb
+jupyter notebook notebooks/Diabetes_Prediction.ipynb
 ```
 
 ### Making Predictions
@@ -80,33 +80,12 @@ python src/train.py --n_estimators 300 --max_depth 15
 | Voting Ensemble| 0.84    | 0.785    | 0.75      | 0.76   | 0.755    |
 
 ### Feature Importance
-![Feature Importance](https://via.placeholder.com/600x300.png?text=Feature+Importance+Visualization)  
+![Feature Importance](reports/feature_importance_comparison.png)  
 *Glucose levels and BMI are the strongest predictors of diabetes risk*
 
 ### ROC Curve Comparison
-![ROC Curves](https://via.placeholder.com/600x300.png?text=ROC+Curve+Comparison)  
+![ROC Curves](reports/roc_comparison.png)  
 *XGBoost shows superior performance across all thresholds*
-
-## Repository Structure
-```
-diabetes-risk-assessment/
-├── data/                   # Dataset storage
-│   └── diabetes.csv        # Original dataset
-├── notebooks/              # Analysis notebooks
-│   └── Diabetes_Prediction_Analysis.ipynb
-├── src/                    # Source code
-│   ├── preprocess.py       # Data cleaning
-│   ├── train.py            # Model training
-│   ├── evaluate.py         # Model evaluation
-│   └── predict.py          # Prediction functions
-├── models/                 # Trained models
-│   └── diabetes_model.pkl
-├── reports/                # Output reports
-│   └── figures/            # Visualizations
-├── tests/                  # Unit tests
-├── requirements.txt        # Dependencies
-└── README.md               # Project documentation
-```
 
 ## Contributing
 
@@ -119,8 +98,3 @@ Contributions are welcome! Please follow these steps:
 
 ## License
 Distributed under the MIT License. See `LICENSE` for more information.
-
-## Contact
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - youremail@example.com
-
-Project Link: [https://github.com/yourusername/diabetes-risk-assessment](https://github.com/yourusername/diabetes-risk-assessment)
