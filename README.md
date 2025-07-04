@@ -79,6 +79,10 @@ python src/train.py --n_estimators 300 --max_depth 15
 | **XGBoost**    | 0.85    | 0.79     | 0.76      | 0.78   | 0.77     |
 | Random Forest  | 0.83    | 0.79     | 0.74      | 0.75   | 0.75     |
 
+### Optimal Decision Threshold
+![Threshold Optimization](reports/threshold_optimization.png)  
+*Optimal decision threshold at 0.31 balances precision (0.63) and recall (0.81)*
+
 ### Feature Importance
 ![Feature Importance](reports/feature_importance_comparison.png)  
 *Glucose levels, BMI, and Age are the strongest predictors of diabetes risk*
