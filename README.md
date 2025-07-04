@@ -7,13 +7,13 @@
 This project develops a machine learning system to predict diabetes risk using clinical measurements from the Pima Indians Diabetes dataset. The solution focuses on interpretability and clinical relevance, providing not just predictions but also explanations for each prediction to support medical decision-making.
 
 **Key Metrics**:
-- 🎯 **ROC-AUC**: 0.85
-- ⚖️ **Precision/Recall Balance**: 0.76/0.78
-- 📊 **F1-Score**: 0.77
-- 📈 **Accuracy**: 79.2%
+- **ROC-AUC**: 0.85
+- **Precision/Recall Balance**: 0.76/0.78
+- **F1-Score**: 0.77
+- **Accuracy**: 79.2%
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/diabetes-risk-assessment/)
-[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
