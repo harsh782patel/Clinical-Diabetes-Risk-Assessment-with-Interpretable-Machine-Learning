@@ -1,6 +1,6 @@
 # Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning
 
-![Diabetes Prediction Visualization](https://via.placeholder.com/800x400.png?text=Diabetes+Risk+Assessment+Visualization)  
+![Diabetes Prediction Visualization](reports/shap_summary.png)  
 *Example of model interpretability using SHAP values*
 
 ## Overview
