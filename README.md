@@ -35,6 +35,7 @@ This project develops a machine learning system to predict diabetes risk using c
 git clone https://github.com/harsh782patel/Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning.git
 cd Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning
 ```
+> **Note**: Dataset contains biologically implausible zeros (e.g., Glucose=0). These are automatically handled as missing values during preprocessing.
 
 2. Install dependencies:
 ```bash
