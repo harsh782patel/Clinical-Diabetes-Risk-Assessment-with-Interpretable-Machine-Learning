@@ -8,9 +8,9 @@ This project develops a machine learning system to predict diabetes risk using c
 
 **Key Metrics**:
 - **ROC-AUC**: 0.85
-- **Precision/Recall Balance**: 0.76/0.78
+- **Precision/Recall Balance**: 0.76/0.78 (at optimal threshold)
 - **F1-Score**: 0.77
-- **Accuracy**: 79.2%
+- **Accuracy**: 79%
 
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
 [![Matplotlib](https://custom-icon-badges.demolab.com/badge/Matplotlib-71D291?logo=matplotlib&logoColor=fff)](#)
@@ -56,12 +56,13 @@ Use the trained model to assess diabetes risk:
 from src.predict import predict_diabetes
 
 # Sample patient data: [Pregnancies, Glucose, BP, SkinThickness, Insulin, BMI, DPF, Age]
-patient_data = [2, 120, 70, 20, 100, 26.2, 0.5, 35]
+patient_data = [7, 159, 64, 29, 125, 27.4, 0.294, 40]
 
 risk_score = predict_diabetes(patient_data)
 print(f"Diabetes probability: {risk_score:.1%}")
 
-# Output: Diabetes probability: 73.2%
+# Output: Diabetes probability: 76.0%
+
 ```
 
 ### Training from Scratch
@@ -75,17 +76,16 @@ python src/train.py --n_estimators 300 --max_depth 15
 ### Model Performance Comparison
 | Model          | ROC-AUC | Accuracy | Precision | Recall | F1-Score |
 |----------------|---------|----------|-----------|--------|----------|
-| **XGBoost**    | 0.85    | 0.792    | 0.76      | 0.78   | 0.77     |
-| Random Forest  | 0.83    | 0.779    | 0.74      | 0.75   | 0.745    |
-| Voting Ensemble| 0.84    | 0.785    | 0.75      | 0.76   | 0.755    |
+| **XGBoost**    | 0.85    | 0.79     | 0.76      | 0.78   | 0.77     |
+| Random Forest  | 0.83    | 0.79     | 0.74      | 0.75   | 0.75     |
 
 ### Feature Importance
 ![Feature Importance](reports/feature_importance_comparison.png)  
-*Glucose levels and BMI are the strongest predictors of diabetes risk*
+*Glucose levels, BMI, and Age are the strongest predictors of diabetes risk*
 
 ### ROC Curve Comparison
 ![ROC Curves](reports/roc_comparison.png)  
-*XGBoost shows superior performance across all thresholds*
+*XGBoost shows marginally better performance than Random Forest*
 
 ## Contributing
 
