@@ -5,7 +5,7 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
-import plotly.graph_objects as go
+import plotly.express as px
 
 # Load model and features
 @st.cache_resource
@@ -126,65 +126,59 @@ if st.button('Assess Diabetes Risk'):
     # Display results with enhanced visualization
     st.subheader('Diabetes Risk Assessment')
     
-    # Create a clean risk meter with Plotly
-    fig = go.Figure()
-    
-    # Add background gradient
-    fig.add_trace(go.Scatter(
-        x=[0, 20, 40, 60, 80, 100],
-        y=[0, 0, 0, 0, 0, 0],
-        mode='markers',
-        marker=dict(
-            size=0.1,
-            color=['#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'],
-            colorscale='Jet',
-            showscale=False
-        ),
-        hoverinfo='none'
-    ))
-    
-    # Add risk indicator
-    fig.add_trace(go.Scatter(
-        x=[probability * 100],
-        y=[0],
-        mode='markers+text',
-        marker=dict(size=25, color=color),
-        text=[emoji],
-        textposition="top center",
-        textfont=dict(size=20),
-        hoverinfo='none'
-    ))
-    
-    # Add vertical line
-    fig.add_trace(go.Scatter(
-        x=[probability * 100, probability * 100],
-        y=[-0.5, 0.5],
-        mode='lines',
-        line=dict(color='black', width=2),
-        hoverinfo='none'
-    ))
-    
-    # Set layout
-    fig.update_layout(
-        height=150,
-        xaxis=dict(
-            range=[0, 100],
-            showgrid=False,
-            zeroline=False,
-            showticklabels=True,
-            ticks="outside",
-            tickvals=[0, 20, 40, 60, 80, 100],
-            ticktext=['0% (Very Low)', '20% (Low)', '40% (Moderate)', '60% (High)', '80% (Very High)', '100%']
-        ),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        showlegend=False,
-        margin=dict(l=20, r=20, t=50, b=20),
-        title=f"Risk Probability: <span style='color:{color}; font-weight:bold'>{probability:.1%}</span> - {risk_category}",
-        title_x=0.03
-    )
-    
-    # Display the plot
-    st.plotly_chart(fig, use_container_width=True)
+    # Create a clean risk assessment card
+    with st.container():
+        col1, col2 = st.columns([1, 3])
+        
+        with col1:
+            # Risk gauge visualization
+            st.markdown(f"""
+            <div style="text-align:center; margin-top:20px">
+                <div style="font-size:48px; color:{color}">{emoji}</div>
+                <div style="font-size:24px; font-weight:bold; color:{color}">{risk_category}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with col2:
+            # Risk probability and explanation
+            st.markdown(f"""
+            <div style="padding:15px; background-color:#f8f9fa; border-radius:10px; border-left: 5px solid {color}">
+                <div style="font-size:28px; font-weight:bold; color:{color}">{probability:.1%}</div>
+                <div style="margin-top:10px">
+                    This means you have a <span style="font-weight:bold">{probability:.1%} probability</span> 
+                    of developing diabetes based on your clinical measurements.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Risk meter visualization
+        st.markdown(f"""
+        <div style="margin-top:20px; margin-bottom:30px">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px">
+                <span style="color:#4CAF50">Very Low</span>
+                <span style="color:#8BC34A">Low</span>
+                <span style="color:#FFC107">Moderate</span>
+                <span style="color:#FF9800">High</span>
+                <span style="color:#F44336">Very High</span>
+            </div>
+            <div style="background:linear-gradient(90deg, #4CAF50 0%, #8BC34A 20%, #FFC107 40%, #FF9800 60%, #F44336 100%); 
+                        height:20px; border-radius:10px; position:relative">
+                <div style="position:absolute; left:{probability*100}%; top:-25px; transform:translateX(-50%)">
+                    <div style="font-size:20px">▼</div>
+                </div>
+                <div style="position:absolute; left:{probability*100}%; 
+                            height:25px; width:2px; background-color:black"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px">
+                <span>0%</span>
+                <span>20%</span>
+                <span>40%</span>
+                <span>60%</span>
+                <span>80%</span>
+                <span>100%</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Risk-specific recommendations
     st.subheader('Clinical Recommendations')
@@ -216,7 +210,7 @@ if st.button('Assess Diabetes Risk'):
         """)
     
     # SHAP explanation
-    st.subheader('Risk Factor Analysis')
+    st.subheader('Key Risk Factors')
     
     try:
         # Extract model from pipeline
@@ -242,47 +236,68 @@ if st.button('Assess Diabetes Risk'):
         shap_values_single = shap_values_positive[0]
         
         # Feature impact table
-        st.write("**How each feature contributes to your diabetes risk:**")
-        
-        # Create impact DataFrame
         impact_data = []
         for i, feature in enumerate(feature_names):
             impact = shap_values_single[i]
-            abs_impact = abs(impact)
-            
-            if impact > 0:
-                significance = f"Increases risk by {abs_impact:.3f}"
-                color = "#ff9999"
-                icon = "🔼"
-            else:
-                significance = f"Decreases risk by {abs_impact:.3f}"
-                color = "#99ff99"
-                icon = "🔽"
-                
             impact_data.append({
                 'Feature': feature,
                 'Impact': impact,
-                'Clinical Significance': significance,
-                'Icon': icon
+                'Absolute Impact': abs(impact),
+                'Direction': 'Increases Risk' if impact > 0 else 'Decreases Risk'
             })
         
-        impact_df = pd.DataFrame(impact_data).sort_values('Impact', ascending=False)
+        impact_df = pd.DataFrame(impact_data).sort_values('Absolute Impact', ascending=False)
         
-        # Display styled table
+        # Display top 3 risk factors
+        st.subheader("Top Risk Contributors")
+        top_factors = impact_df.head(3)
+        cols = st.columns(3)
+        
+        for i, (_, row) in enumerate(top_factors.iterrows()):
+            with cols[i]:
+                direction = "🔼 Increases" if row['Impact'] > 0 else "🔽 Decreases"
+                color = "#ff9999" if row['Impact'] > 0 else "#99ff99"
+                st.markdown(f"""
+                <div style="border:1px solid #e0e0e0; border-radius:10px; padding:15px; text-align:center; 
+                            border-left: 4px solid {color}; margin-bottom:15px">
+                    <div style="font-weight:bold; font-size:16px">{row['Feature']}</div>
+                    <div style="font-size:24px; color:{color}; margin:10px 0">{direction}</div>
+                    <div style="font-size:14px">Impact: {abs(row['Impact']):.3f}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Display all factors in a clean table
+        st.subheader("All Risk Factors")
+        
+        # Format impact values with color
+        def color_impact(val):
+            color = 'red' if val > 0 else 'green'
+            return f'color: {color}; font-weight: bold'
+        
+        # Format direction with icons
+        def format_direction(row):
+            if row['Impact'] > 0:
+                return f"🔼 Increases by {abs(row['Impact']):.3f}"
+            else:
+                return f"🔽 Decreases by {abs(row['Impact']):.3f}"
+        
+        impact_df['Effect'] = impact_df.apply(format_direction, axis=1)
+        
+        # Display table without index
         st.dataframe(
-            impact_df[['Icon', 'Feature', 'Clinical Significance']],
+            impact_df[['Feature', 'Effect']],
             column_config={
-                "Icon": st.column_config.TextColumn(""),
-                "Feature": st.column_config.TextColumn("Clinical Measurement"),
-                "Clinical Significance": st.column_config.TextColumn("Impact on Risk")
-            }
+                "Feature": "Clinical Measurement",
+                "Effect": "Effect on Diabetes Risk"
+            },
+            hide_index=True
         )
         
         # Create horizontal bar chart
-        st.write("**Impact Magnitude Visualization:**")
+        st.subheader("Risk Factor Impact")
+        fig, ax = plt.subplots(figsize=(10, 6))
         impact_df = impact_df.sort_values('Impact', ascending=True)  # Sort for better visualization
         
-        fig, ax = plt.subplots(figsize=(10, 6))
         bars = ax.barh(
             impact_df['Feature'], 
             impact_df['Impact'],
@@ -305,21 +320,6 @@ if st.button('Assess Diabetes Risk'):
         ax.axvline(0, color='grey', linestyle='--', linewidth=0.8)
         plt.tight_layout()
         st.pyplot(fig)
-        
-        # Force plot
-        st.write("**How features interact to determine your risk:**")
-        plt.figure(figsize=(12, 4))
-        shap.force_plot(
-            base_value,
-            shap_values_single,
-            input_df.iloc[0],
-            feature_names=feature_names,
-            matplotlib=True,
-            show=False,
-            text_rotation=15
-        )
-        st.pyplot(plt.gcf())
-        plt.clf()
         
     except Exception as e:
         st.warning(f"Detailed explanation unavailable: {str(e)}")
