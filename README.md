@@ -1,5 +1,7 @@
 # Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://harsh782patel-clinical-diabete-diabetes-streamlit-appapp-d8l0bl.streamlit.app/)
+
 ![Diabetes Prediction Visualization](reports/shap_summary.png)  
 *Example of model interpretability using SHAP values*
 
@@ -20,7 +22,7 @@ This project develops a machine learning system to predict diabetes risk using c
 *Interactive clinical dashboard for diabetes risk assessment*
 
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://harsh782patel-clinical-diabete-diabetes-streamlit-appapp-d8l0bl.streamlit.app/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)](#)
 [![Matplotlib](https://custom-icon-badges.demolab.com/badge/Matplotlib-71D291?logo=matplotlib&logoColor=fff)](#)
 [![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff)](#)
 [![Pandas](https://img.shields.io/badge/Pandas-150458?logo=pandas&logoColor=fff)](#)
