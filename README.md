@@ -1,18 +1,29 @@
 # Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://harsh782patel-clinical-diabete-diabetes-streamlit-appapp-d8l0bl.streamlit.app/)
+
 ![Diabetes Prediction Visualization](reports/shap_summary.png)  
 *Example of model interpretability using SHAP values*
 
 ## Overview
 This project develops a machine learning system to predict diabetes risk using clinical measurements from the Pima Indians Diabetes dataset. The solution focuses on interpretability and clinical relevance, providing not just predictions but also explanations for each prediction to support medical decision-making.
 
-**Key Metrics**:
-- **ROC-AUC**: 0.85
-- **Precision/Recall Balance**: 0.76/0.78 (at optimal threshold)
-- **F1-Score**: 0.77
-- **Accuracy**: 79%
+**Live Deployment**: [Clinical Diabetes Risk Assessment App](https://harsh782patel-clinical-diabete-diabetes-streamlit-appapp-d8l0bl.streamlit.app/)
+
+**Key Features**:
+- **Clinical Web Application**: Interactive Streamlit dashboard for risk assessment
+- **Interpretable AI**: SHAP values for prediction explanations
+- **Clinical Recommendations**: Personalized guidance based on risk level
+- **BMI Calculator**: Integrated tool for body mass index calculation
+- **Deployment-Ready Pipeline**: End-to-end processing from raw data to prediction
+
+**App Screenshot**:  
+
+![Streamlit App Screenshot](app-screenshot.png)  
+*Interactive clinical dashboard for diabetes risk assessment*
 
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)](#)
 [![Matplotlib](https://custom-icon-badges.demolab.com/badge/Matplotlib-71D291?logo=matplotlib&logoColor=fff)](#)
 [![NumPy](https://img.shields.io/badge/NumPy-4DABCF?logo=numpy&logoColor=fff)](#)
 [![Pandas](https://img.shields.io/badge/Pandas-150458?logo=pandas&logoColor=fff)](#)
@@ -21,6 +32,15 @@ This project develops a machine learning system to predict diabetes risk using c
 
 ## Features
 
+### Clinical Web Application
+- **Interactive Dashboard**: User-friendly interface for clinical data entry
+- **Risk Visualization**: Medical-grade risk assessment scale
+- **BMI Calculator**: Built-in tool to calculate body mass index
+- **Clinical Definitions**: Detailed explanations of medical parameters
+- **Personalized Recommendations**: Actionable guidance based on risk level
+- **Cloud Deployment**: Accessible via web browser
+
+### Machine Learning
 - **Clinical Feature Engineering**: Domain-specific feature creation like Glucose-BMI interaction
 - **Interpretable AI**: SHAP values for prediction explanations
 - **Threshold Optimization**: Balanced precision/recall for medical context
@@ -43,6 +63,23 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+### Using the Deployed Application
+Access the live clinical dashboard directly:
+[Clinical Diabetes Risk Assessment App](https://harsh782patel-clinical-diabete-diabetes-streamlit-appapp-d8l0bl.streamlit.app/)
+
+The application provides:
+- Interactive input of clinical parameters
+- Real-time diabetes risk assessment
+- Visual risk scale with color-coded categories
+- Clinical recommendations based on risk level
+- Feature importance analysis
+
+### Running Locally
+Launch the clinical dashboard:
+```bash
+cd diabetes-streamlit-app
+streamlit run app.py
+```
 
 ### Running the Full Analysis
 Execute the Jupyter notebook for complete EDA, modeling and evaluation:
@@ -73,6 +110,9 @@ python src/train.py --n_estimators 300 --max_depth 15
 ```
 
 ## Key Results
+### Web Application Features
+![Web Application Features](reports/shap_summary.png) 
+*Clinical dashboard with (A) input parameters, (B) risk visualization, (C) recommendations*
 
 ### Model Performance Comparison
 | Model          | ROC-AUC | Accuracy | Precision | Recall | F1-Score |
