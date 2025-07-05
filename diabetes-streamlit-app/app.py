@@ -1,40 +1,13 @@
 import streamlit as st
-import sys
-import subprocess
-import os
-
-# Check and install missing packages
-required_packages = ['joblib', 'shap', 'matplotlib', 'sklearn', 'pandas', 'numpy', 'plotly']
-missing_packages = []
-
-for package in required_packages:
-    try:
-        __import__(package)
-    except ImportError:
-        missing_packages.append(package)
-
-if missing_packages:
-    st.warning(f"Installing missing packages: {', '.join(missing_packages)}...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_packages)
-    st.rerun()
-
-# Now import the rest
 import pandas as pd
 import numpy as np
 import joblib
-import shap
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
-import plotly.express as px
 
 # Load model and features
 @st.cache_resource
 def load_model():
-    # Check if files exist
-    if not os.path.exists('clinical_diabetes_pipeline.pkl') or not os.path.exists('feature_names.pkl'):
-        st.error("Model files not found! Please upload 'clinical_diabetes_pipeline.pkl' and 'feature_names.pkl'")
-        st.stop()
-        
     pipeline = joblib.load('clinical_diabetes_pipeline.pkl')
     feature_names = joblib.load('feature_names.pkl')
     return pipeline, feature_names
@@ -100,7 +73,7 @@ def user_input_features():
 # Get user input
 input_df = user_input_features()
 
-# Display user inputs with clinical context
+# Display user inputs
 st.subheader('Patient Input Features')
 st.dataframe(input_df.style.format("{:.1f}"))
 
@@ -119,6 +92,7 @@ st.markdown("""
 # Predict and display results
 if st.button('Assess Diabetes Risk'):
     # Predict
+    prediction = pipeline.predict(input_df)[0]
     probability = pipeline.predict_proba(input_df)[0][1]
     
     # Enhanced risk stratification
@@ -151,59 +125,48 @@ if st.button('Assess Diabetes Risk'):
     # Display results with enhanced visualization
     st.subheader('Diabetes Risk Assessment')
     
-    # Create a clean risk assessment card
-    with st.container():
-        col1, col2 = st.columns([1, 3])
-        
-        with col1:
-            # Risk gauge visualization
-            st.markdown(f"""
-            <div style="text-align:center; margin-top:20px">
-                <div style="font-size:48px; color:{color}">{emoji}</div>
-                <div style="font-size:24px; font-weight:bold; color:{color}">{risk_category}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col2:
-            # Risk probability and explanation
-            st.markdown(f"""
-            <div style="padding:15px; background-color:#f8f9fa; border-radius:10px; border-left: 5px solid {color}">
-                <div style="font-size:28px; font-weight:bold; color:{color}">{probability:.1%}</div>
-                <div style="margin-top:10px">
-                    This means you have a <span style="font-weight:bold">{probability:.1%} probability</span> 
-                    of developing diabetes based on your clinical measurements.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Risk meter visualization
-        st.markdown(f"""
-        <div style="margin-top:20px; margin-bottom:30px">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px">
-                <span style="color:#4CAF50">Very Low</span>
-                <span style="color:#8BC34A">Low</span>
-                <span style="color:#FFC107">Moderate</span>
-                <span style="color:#FF9800">High</span>
-                <span style="color:#F44336">Very High</span>
-            </div>
-            <div style="background:linear-gradient(90deg, #4CAF50 0%, #8BC34A 20%, #FFC107 40%, #FF9800 60%, #F44336 100%); 
-                        height:20px; border-radius:10px; position:relative">
-                <div style="position:absolute; left:{probability*100}%; top:-25px; transform:translateX(-50%)">
-                    <div style="font-size:20px">▼</div>
-                </div>
-                <div style="position:absolute; left:{probability*100}%; 
-                            height:25px; width:2px; background-color:black"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-top:5px">
-                <span>0%</span>
-                <span>20%</span>
-                <span>40%</span>
-                <span>60%</span>
-                <span>80%</span>
-                <span>100%</span>
+    # Create risk card
+    st.markdown(f"""
+    <div style="border-radius:10px; padding:20px; background-color:#f8f9fa; 
+                border-left: 6px solid {color}; margin-bottom:20px">
+        <div style="display:flex; align-items:center; gap:20px">
+            <div style="font-size:48px; color:{color}">{emoji}</div>
+            <div>
+                <h2 style="margin:0; color:{color}">{risk_category}</h2>
+                <p style="font-size:24px; margin:10px 0; font-weight:bold; color:{color}">
+                    {probability:.1%} probability
+                </p>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Create simple risk meter
+    st.write("**Risk Level:**")
+    fig, ax = plt.subplots(figsize=(10, 2))
+    risk_labels = ["Very Low", "Low", "Moderate", "High", "Very High"]
+    risk_colors = ["#4CAF50", "#8BC34A", "#FFC107", "#FF9800", "#F44336"]
+    
+    # Find current risk level index
+    risk_level_idx = 0
+    if probability >= 0.8: risk_level_idx = 4
+    elif probability >= 0.6: risk_level_idx = 3
+    elif probability >= 0.4: risk_level_idx = 2
+    elif probability >= 0.2: risk_level_idx = 1
+    
+    for i in range(5):
+        ax.barh(0, 20, left=i*20, color=risk_colors[i], alpha=0.7 if i != risk_level_idx else 1.0)
+        ax.text(i*20 + 10, 0, risk_labels[i], 
+                ha='center', va='center', color='white' if i == risk_level_idx else 'black')
+    
+    # Add indicator
+    ax.plot([probability*100, probability*100], [-0.5, 0.5], 'k-', linewidth=2)
+    ax.text(probability*100, -0.7, f'{probability:.1%}', ha='center')
+    
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-1, 1)
+    ax.axis('off')
+    st.pyplot(fig)
     
     # Risk-specific recommendations
     st.subheader('Clinical Recommendations')
@@ -211,159 +174,76 @@ if st.button('Assess Diabetes Risk'):
     if risk_level <= 2:  # Very Low or Low Risk
         st.success(f"""
         **Preventive Measures:**
-        - ✅ Continue annual glucose screening
-        - ✅ Maintain BMI <25 through balanced diet
-        - ✅ Engage in 150 mins/week of moderate exercise
-        - ✅ Reassess risk factors in 2-3 years
+        - Continue annual glucose screening
+        - Maintain BMI <25 through balanced diet
+        - Engage in 150 mins/week of moderate exercise
+        - Reassess risk factors in 2-3 years
         """)
     elif risk_level == 3:  # Moderate Risk
         st.warning(f"""
         **Early Intervention Recommended:**
-        - 🔸 Perform HbA1c test within 3 months
-        - 🔸 Begin lifestyle modification program
-        - 🔸 Monitor fasting glucose quarterly
-        - 🔸 Consider metformin if prediabetes confirmed
+        - Perform HbA1c test within 3 months
+        - Begin lifestyle modification program
+        - Monitor fasting glucose quarterly
+        - Consider metformin if prediabetes confirmed
         """)
     else:  # High or Very High Risk
         st.error(f"""
         **Immediate Action Required:**
-        - 🔴 Conduct comprehensive diabetes screening now (Fasting glucose + HbA1c)
-        - 🔴 Refer to endocrinology specialist
-        - 🔴 Implement intensive lifestyle intervention (Diet + Exercise)
-        - 🔴 Begin pharmacotherapy if indicated
-        - 🔴 Schedule follow-up in 1 month
+        - Conduct comprehensive diabetes screening now
+        - Refer to endocrinology specialist
+        - Implement intensive lifestyle intervention
+        - Begin pharmacotherapy if indicated
+        - Schedule follow-up in 1 month
         """)
     
-    # SHAP explanation
+    # Feature importance explanation
     st.subheader('Key Risk Factors')
     
     try:
-        # Extract model from pipeline
+        # Get feature importances
         model = pipeline.named_steps['classifier']
-        preprocessor = Pipeline(pipeline.steps[:-1])
-        transformed_input = preprocessor.transform(input_df)
+        importance = model.feature_importances_
         
-        # Create SHAP explainer
-        explainer = shap.TreeExplainer(model)
-        shap_values_calc = explainer.shap_values(transformed_input)
+        # Create impact DataFrame
+        impact_df = pd.DataFrame({
+            'Feature': feature_names,
+            'Importance': importance
+        }).sort_values('Importance', ascending=False)
         
-        # Handle different SHAP output formats
-        if isinstance(shap_values_calc, list) and len(shap_values_calc) == 2:
-            shap_values_positive = np.array(shap_values_calc[1])
-            base_value = explainer.expected_value[1]
-        elif len(np.array(shap_values_calc).shape) == 3:
-            shap_values_positive = shap_values_calc[:, :, 1]
-            base_value = explainer.expected_value[1]
-        else:
-            shap_values_positive = np.array(shap_values_calc)
-            base_value = explainer.expected_value
-
-        shap_values_single = shap_values_positive[0]
-        
-        # Feature impact table
-        impact_data = []
-        for i, feature in enumerate(feature_names):
-            impact = shap_values_single[i]
-            impact_data.append({
-                'Feature': feature,
-                'Impact': impact,
-                'Absolute Impact': abs(impact),
-                'Direction': 'Increases Risk' if impact > 0 else 'Decreases Risk'
-            })
-        
-        impact_df = pd.DataFrame(impact_data).sort_values('Absolute Impact', ascending=False)
-        
-        # Display top 3 risk factors
-        st.subheader("Top Risk Contributors")
+        # Display top factors
+        st.write("**Most Important Risk Factors:**")
         top_factors = impact_df.head(3)
         cols = st.columns(3)
         
         for i, (_, row) in enumerate(top_factors.iterrows()):
             with cols[i]:
-                direction = "🔼 Increases" if row['Impact'] > 0 else "🔽 Decreases"
-                color = "#ff9999" if row['Impact'] > 0 else "#99ff99"
                 st.markdown(f"""
                 <div style="border:1px solid #e0e0e0; border-radius:10px; padding:15px; text-align:center; 
-                            border-left: 4px solid {color}; margin-bottom:15px">
+                            border-left: 4px solid #ff9999; margin-bottom:15px">
                     <div style="font-weight:bold; font-size:16px">{row['Feature']}</div>
-                    <div style="font-size:24px; color:{color}; margin:10px 0">{direction}</div>
-                    <div style="font-size:14px">Impact: {abs(row['Impact']):.3f}</div>
+                    <div style="font-size:24px; color:#ff9999; margin:10px 0">▲</div>
+                    <div style="font-size:14px">Impact: {row['Importance']:.3f}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
-        # Display all factors in a clean table
-        st.subheader("All Risk Factors")
-        
-        # Format impact values with color
-        def color_impact(val):
-            color = 'red' if val > 0 else 'green'
-            return f'color: {color}; font-weight: bold'
-        
-        # Format direction with icons
-        def format_direction(row):
-            if row['Impact'] > 0:
-                return f"🔼 Increases by {abs(row['Impact']):.3f}"
-            else:
-                return f"🔽 Decreases by {abs(row['Impact']):.3f}"
-        
-        impact_df['Effect'] = impact_df.apply(format_direction, axis=1)
-        
-        # Display table without index
-        st.dataframe(
-            impact_df[['Feature', 'Effect']],
-            column_config={
-                "Feature": "Clinical Measurement",
-                "Effect": "Effect on Diabetes Risk"
-            },
-            hide_index=True
-        )
+        # Display all factors
+        st.write("**All Risk Factors:**")
+        st.dataframe(impact_df, hide_index=True)
         
         # Create horizontal bar chart
-        st.subheader("Risk Factor Impact")
+        st.subheader("Risk Factor Importance")
         fig, ax = plt.subplots(figsize=(10, 6))
-        impact_df = impact_df.sort_values('Impact', ascending=True)  # Sort for better visualization
+        impact_df = impact_df.sort_values('Importance', ascending=True)
         
-        bars = ax.barh(
-            impact_df['Feature'], 
-            impact_df['Impact'],
-            color=impact_df['Impact'].apply(lambda x: '#ff9999' if x > 0 else '#99ff99')
-        )
-        
-        # Add value labels
-        for bar in bars:
-            width = bar.get_width()
-            label = f"{width:.3f}"
-            if width > 0:
-                ax.text(width + 0.005, bar.get_y() + bar.get_height()/2, 
-                        label, va='center', ha='left')
-            else:
-                ax.text(width - 0.005, bar.get_y() + bar.get_height()/2, 
-                        label, va='center', ha='right')
-        
-        ax.set_xlabel('Impact on Diabetes Probability')
-        ax.set_title('Feature Impact Magnitude')
-        ax.axvline(0, color='grey', linestyle='--', linewidth=0.8)
+        bars = ax.barh(impact_df['Feature'], impact_df['Importance'], color='#4CAF50')
+        ax.set_xlabel('Importance Score')
+        ax.set_title('Feature Importance')
         plt.tight_layout()
         st.pyplot(fig)
         
     except Exception as e:
-        st.warning(f"Detailed explanation unavailable: {str(e)}")
-        st.info("Showing standard feature importance instead")
-        
-        # Fallback to standard feature importance
-        try:
-            model = pipeline.named_steps['classifier']
-            importance = model.feature_importances_
-            importance_df = pd.DataFrame({
-                'Feature': feature_names,
-                'Importance': importance
-            }).sort_values('Importance', ascending=False)
-            
-            st.bar_chart(importance_df.set_index('Feature'))
-            st.write("**Global Feature Importance:**")
-            st.dataframe(importance_df)
-        except:
-            st.error("Feature importance data unavailable")
+        st.error(f"Feature importance data unavailable: {str(e)}")
 
 # Key Insights Section
 st.sidebar.markdown("""
@@ -381,19 +261,19 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("""
     **Dominant Risk Factors**:
-    1. **Glucose levels** - Fasting plasma glucose is the strongest predictor
-    2. **BMI** - Body Mass Index indicates metabolic health
-    3. **Age** - Risk increases significantly after 45
-    4. **Diabetes Genetic Risk** - Family history multiplier
+    1. Glucose levels
+    2. BMI
+    3. Age
+    4. Diabetes Genetic Risk
     """)
     
     st.markdown("""
     **Risk Stratification**:
-    - < 20% → Very Low Risk (Green)
-    - 20-39% → Low Risk (Light Green)
-    - 40-59% → Moderate Risk (Amber)
-    - 60-79% → High Risk (Orange)
-    - ≥80% → Very High Risk (Red)
+    - < 20% → Very Low Risk
+    - 20-39% → Low Risk
+    - 40-59% → Moderate Risk
+    - 60-79% → High Risk
+    - ≥80% → Very High Risk
     """)
 
 with col2:
@@ -402,24 +282,22 @@ with col2:
     - Matches established diabetes pathophysiology
     - Identifies hyperglycemia as primary driver
     - Detects obesity and age-related patterns
-    - Aligns with ADA screening guidelines
     """)
     
     st.markdown("""
     **Key Limitations**:
     - Insulin data missing in 49% of cases
-    - Homogeneous patient cohort (Pima Indians)
-    - Doesn't include lifestyle/diet factors
-    - Blood pressure measurement is diastolic only
+    - Homogeneous patient cohort
+    - Doesn't include lifestyle factors
     """)
 
 # Model performance info
 st.markdown("""
 **Model Performance Metrics**:
-- **AUC**: 0.8146 (Excellent discrimination)
-- **Recall**: 81% (Minimizes missed cases)
-- **Precision**: 63% (Balances unnecessary interventions)
-- **F1 Score**: 0.71 (Optimal threshold: 0.31)
+- AUC: 0.8146
+- Recall: 81%
+- Precision: 63%
+- F1 Score: 0.71
 """)
 
 # Footer
@@ -429,6 +307,5 @@ st.markdown("""
 This tool provides risk assessment based on statistical modeling, not a medical diagnosis. 
 Clinical judgment should always supersede algorithmic predictions. 
 
-*Model developed with SHAP explanations for clinical interpretability. 
-Validated on Pima Indians Diabetes Dataset. Not for diagnostic use.*
+*Model developed for clinical interpretability. Validated on Pima Indians Diabetes Dataset.*
 """)
