@@ -18,6 +18,7 @@ This project develops a machine learning system to predict diabetes risk using c
 - **Deployment-Ready Pipeline**: End-to-end processing from raw data to prediction
 
 **App Screenshot**:  
+
 ![Streamlit App Screenshot](app-screenshot.png)  
 *Interactive clinical dashboard for diabetes risk assessment*
 
