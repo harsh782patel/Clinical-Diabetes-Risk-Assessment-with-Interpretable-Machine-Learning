@@ -4,15 +4,30 @@ import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
+import os  # Added for path handling
 
-# Load model and features
+# Load model and features with robust path handling
 @st.cache_resource
 def load_model():
-    pipeline = joblib.load('clinical_diabetes_pipeline.pkl')
-    feature_names = joblib.load('feature_names.pkl')
+    # Get current script directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Construct full paths to model files
+    pipeline_path = os.path.join(current_dir, 'clinical_diabetes_pipeline.pkl')
+    features_path = os.path.join(current_dir, 'feature_names.pkl')
+    
+    # Load with explicit path verification
+    if not os.path.exists(pipeline_path):
+        st.error(f"Model file not found at: {pipeline_path}")
+    if not os.path.exists(features_path):
+        st.error(f"Feature names file not found at: {features_path}")
+    
+    pipeline = joblib.load(pipeline_path)
+    feature_names = joblib.load(features_path)
     return pipeline, feature_names
 
 pipeline, feature_names = load_model()
+
 
 # Clinical definitions for each parameter
 CLINICAL_DEFINITIONS = {
