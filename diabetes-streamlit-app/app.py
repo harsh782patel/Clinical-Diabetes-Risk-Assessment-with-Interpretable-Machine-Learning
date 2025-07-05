@@ -1,4 +1,24 @@
 import streamlit as st
+import sys
+import subprocess
+import os
+
+# Check and install missing packages
+required_packages = ['joblib', 'shap', 'matplotlib', 'sklearn', 'pandas', 'numpy', 'plotly']
+missing_packages = []
+
+for package in required_packages:
+    try:
+        __import__(package)
+    except ImportError:
+        missing_packages.append(package)
+
+if missing_packages:
+    st.warning(f"Installing missing packages: {', '.join(missing_packages)}...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing_packages)
+    st.rerun()
+
+# Now import the rest
 import pandas as pd
 import numpy as np
 import joblib
@@ -10,6 +30,11 @@ import plotly.express as px
 # Load model and features
 @st.cache_resource
 def load_model():
+    # Check if files exist
+    if not os.path.exists('clinical_diabetes_pipeline.pkl') or not os.path.exists('feature_names.pkl'):
+        st.error("Model files not found! Please upload 'clinical_diabetes_pipeline.pkl' and 'feature_names.pkl'")
+        st.stop()
+        
     pipeline = joblib.load('clinical_diabetes_pipeline.pkl')
     feature_names = joblib.load('feature_names.pkl')
     return pipeline, feature_names
