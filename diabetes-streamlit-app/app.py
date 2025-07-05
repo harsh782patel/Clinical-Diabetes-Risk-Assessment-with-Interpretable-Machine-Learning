@@ -5,6 +5,7 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
+import plotly.graph_objects as go
 
 # Load model and features
 @st.cache_resource
@@ -125,50 +126,65 @@ if st.button('Assess Diabetes Risk'):
     # Display results with enhanced visualization
     st.subheader('Diabetes Risk Assessment')
     
-    # Create a risk meter
-    st.markdown(f"""
-    <div style="background-color:#f8f9fa; padding:20px; border-radius:10px; margin-bottom:20px; border-left: 5px solid {color}">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-            <h3 style="color:{color}; margin:0">Risk Category: {risk_category} {emoji}</h3>
-            <h2 style="color:{color}; margin:0">{probability:.1%}</h2>
-        </div>
-        
-        <div style="background:linear-gradient(90deg, #4CAF50 0%, #FFC107 50%, #F44336 100%); 
-                    height:20px; border-radius:10px; position:relative; margin-bottom:30px">
-            <div style="position:absolute; left:{probability*100}%; top:-30px; transform:translateX(-50%)">
-                <div style="font-size:24px">{emoji}</div>
-            </div>
-            <div style="position:absolute; left:{probability*100}%; 
-                        height:35px; width:3px; background-color:black"></div>
-        </div>
-        
-        <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:14px">
-            <div style="text-align:center">
-                <div>0%</div>
-                <div>Very Low</div>
-            </div>
-            <div style="text-align:center">
-                <div>20%</div>
-                <div>Low</div>
-            </div>
-            <div style="text-align:center">
-                <div>40%</div>
-                <div>Moderate</div>
-            </div>
-            <div style="text-align:center">
-                <div>60%</div>
-                <div>High</div>
-            </div>
-            <div style="text-align:center">
-                <div>80%</div>
-                <div>Very High</div>
-            </div>
-            <div style="text-align:center">
-                <div>100%</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Create a clean risk meter with Plotly
+    fig = go.Figure()
+    
+    # Add background gradient
+    fig.add_trace(go.Scatter(
+        x=[0, 20, 40, 60, 80, 100],
+        y=[0, 0, 0, 0, 0, 0],
+        mode='markers',
+        marker=dict(
+            size=0.1,
+            color=['#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'],
+            colorscale='Jet',
+            showscale=False
+        ),
+        hoverinfo='none'
+    ))
+    
+    # Add risk indicator
+    fig.add_trace(go.Scatter(
+        x=[probability * 100],
+        y=[0],
+        mode='markers+text',
+        marker=dict(size=25, color=color),
+        text=[emoji],
+        textposition="top center",
+        textfont=dict(size=20),
+        hoverinfo='none'
+    ))
+    
+    # Add vertical line
+    fig.add_trace(go.Scatter(
+        x=[probability * 100, probability * 100],
+        y=[-0.5, 0.5],
+        mode='lines',
+        line=dict(color='black', width=2),
+        hoverinfo='none'
+    ))
+    
+    # Set layout
+    fig.update_layout(
+        height=150,
+        xaxis=dict(
+            range=[0, 100],
+            showgrid=False,
+            zeroline=False,
+            showticklabels=True,
+            ticks="outside",
+            tickvals=[0, 20, 40, 60, 80, 100],
+            ticktext=['0% (Very Low)', '20% (Low)', '40% (Moderate)', '60% (High)', '80% (Very High)', '100%']
+        ),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        showlegend=False,
+        margin=dict(l=20, r=20, t=50, b=20),
+        title=f"Risk Probability: <span style='color:{color}; font-weight:bold'>{probability:.1%}</span> - {risk_category}",
+        title_x=0.03
+    )
+    
+    # Display the plot
+    st.plotly_chart(fig, use_container_width=True)
     
     # Risk-specific recommendations
     st.subheader('Clinical Recommendations')
@@ -225,52 +241,70 @@ if st.button('Assess Diabetes Risk'):
 
         shap_values_single = shap_values_positive[0]
         
-        # Feature impact table - FIXED THE ERROR HERE
+        # Feature impact table
         st.write("**How each feature contributes to your diabetes risk:**")
         
-        # Create impact DataFrame with interpretation
+        # Create impact DataFrame
         impact_data = []
         for i, feature in enumerate(feature_names):
             impact = shap_values_single[i]
             abs_impact = abs(impact)
             
             if impact > 0:
-                significance = f"🟥 Increases risk by {abs_impact:.3f}"
+                significance = f"Increases risk by {abs_impact:.3f}"
                 color = "#ff9999"
+                icon = "🔼"
             else:
-                significance = f"🟩 Decreases risk by {abs_impact:.3f}"
+                significance = f"Decreases risk by {abs_impact:.3f}"
                 color = "#99ff99"
+                icon = "🔽"
                 
             impact_data.append({
                 'Feature': feature,
                 'Impact': impact,
                 'Clinical Significance': significance,
-                'Color': color
+                'Icon': icon
             })
         
         impact_df = pd.DataFrame(impact_data).sort_values('Impact', ascending=False)
         
-        # Display styled table without bar formatting
-        st.dataframe(impact_df[['Feature', 'Clinical Significance']])
+        # Display styled table
+        st.dataframe(
+            impact_df[['Icon', 'Feature', 'Clinical Significance']],
+            column_config={
+                "Icon": st.column_config.TextColumn(""),
+                "Feature": st.column_config.TextColumn("Clinical Measurement"),
+                "Clinical Significance": st.column_config.TextColumn("Impact on Risk")
+            }
+        )
         
-        # Visual impact bars
-        st.write("**Impact Magnitude:**")
-        for _, row in impact_df.iterrows():
-            label = f"{row['Feature']}: {row['Clinical Significance'].split('by')[1].strip()}"
-            value = abs(row['Impact'])
-            
-            st.markdown(f"""
-            <div style="margin-bottom:10px">
-                <div style="font-weight:500; margin-bottom:5px">{row['Feature']}</div>
-                <div style="background:#f0f0f0; height:20px; border-radius:10px">
-                    <div style="background:{row['Color']}; width:{value*500}%; height:100%; border-radius:10px">
-                        <span style="padding-left:10px; color:black; font-size:12px">
-                            {row['Clinical Significance']}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Create horizontal bar chart
+        st.write("**Impact Magnitude Visualization:**")
+        impact_df = impact_df.sort_values('Impact', ascending=True)  # Sort for better visualization
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        bars = ax.barh(
+            impact_df['Feature'], 
+            impact_df['Impact'],
+            color=impact_df['Impact'].apply(lambda x: '#ff9999' if x > 0 else '#99ff99')
+        )
+        
+        # Add value labels
+        for bar in bars:
+            width = bar.get_width()
+            label = f"{width:.3f}"
+            if width > 0:
+                ax.text(width + 0.005, bar.get_y() + bar.get_height()/2, 
+                        label, va='center', ha='left')
+            else:
+                ax.text(width - 0.005, bar.get_y() + bar.get_height()/2, 
+                        label, va='center', ha='right')
+        
+        ax.set_xlabel('Impact on Diabetes Probability')
+        ax.set_title('Feature Impact Magnitude')
+        ax.axvline(0, color='grey', linestyle='--', linewidth=0.8)
+        plt.tight_layout()
+        st.pyplot(fig)
         
         # Force plot
         st.write("**How features interact to determine your risk:**")
