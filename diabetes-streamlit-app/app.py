@@ -2,11 +2,18 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import plotly.graph_objects as go
-from sklearn.pipeline import Pipeline
 import os
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from sklearn.pipeline import Pipeline
+
+# Try to import Plotly with fallback
+try:
+    import plotly.graph_objects as go
+    plotly_available = True
+except ImportError:
+    plotly_available = False
+    st.warning("Plotly is not installed. Some visualizations will be simplified.")
 
 st.set_page_config(page_title="Clinical Diabetes Risk Assessment", page_icon="🩺", layout="wide")
 
@@ -46,7 +53,7 @@ CLINICAL_DEFINITIONS = {
 
 # App title with improved styling
 st.title('🩺 Clinical Diabetes Risk Assessment')
-st.markdown("""
+st.write("""
 <div style='font-size:18px; padding-bottom:15px'>
 <i>Interpretable ML model predicting diabetes risk using routine clinical measurements</i>
 </div>
@@ -172,58 +179,39 @@ def create_risk_scale(probability):
     current_risk = next((level for level in risk_levels 
                        if level["min"] <= probability < level["max"]), risk_levels[-1])
     
-    # Create a super simple bar chart
-    fig = go.Figure()
+    # Create gradient color scale
+    colors = ["#4CAF50", "#8BC34A", "#FFC107", "#FF9800", "#F44336"]
+    cmap = mcolors.LinearSegmentedColormap.from_list("risk_scale", colors)
     
-    # Add main risk bar
-    fig.add_trace(go.Bar(
-        x=["Your Risk"],
-        y=[probability*100],
-        marker_color=current_risk["color"],
-        width=0.6,
-        text=[f"{probability:.1%}"],
-        textposition='outside',
-        textfont=dict(size=24, color=current_risk["color"]),
-        hoverinfo='none'
-    ))
+    # Create figure
+    fig, ax = plt.subplots(figsize=(10, 1))
+    fig.set_facecolor('none')
+    ax.set_facecolor('none')
     
-    # Add reference lines
-    for level in risk_levels:
-        fig.add_shape(
-            type="line",
-            x0=-0.5, x1=0.5,
-            y0=level["min"]*100, y1=level["min"]*100,
-            line=dict(color="#AAAAAA", width=1, dash="dot")
-        )
+    # Create gradient bar
+    gradient = np.linspace(0, 1, 256).reshape(1, -1)
+    gradient = np.vstack((gradient, gradient))
+    ax.imshow(gradient, aspect='auto', cmap=cmap, extent=[0, 100, 0, 1])
     
-    # Add risk level labels on right side
-    fig.add_trace(go.Scatter(
-        x=[0.5]*5,
-        y=[10, 30, 50, 70, 90],
-        text=[level["label"] for level in risk_levels],
-        mode="text",
-        textfont=dict(color=[level["color"] for level in risk_levels], size=14),
-        showlegend=False,
-        hoverinfo='none'
-    ))
+    # Add current risk marker
+    ax.plot(probability * 100, 0.5, 'ko', markersize=8)
     
-    # Clean, minimal layout
-    fig.update_layout(
-        height=400,
-        yaxis=dict(
-            title="Risk Percentage",
-            range=[0, 100],
-            tickvals=[0, 20, 40, 60, 80, 100],
-            ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
-            tickfont=dict(size=12),
-            titlefont=dict(size=14)
-        ),
-        xaxis=dict(visible=False),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=40, b=40, l=40, r=120),
-        hovermode=False
-    )
+    # Set axis properties
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 1)
+    ax.set_xticks([0, 20, 40, 60, 80, 100])
+    ax.set_xticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
+    ax.set_yticks([])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    
+    # Add labels
+    ax.text(0, 1.5, "Low", ha='left', va='center', fontsize=10)
+    ax.text(100, 1.5, "High", ha='right', va='center', fontsize=10)
+    ax.text(probability * 100, -0.5, f"Your risk: {probability:.1%}", 
+            ha='center', va='top', fontsize=12, fontweight='bold')
     
     return fig, current_risk
 
@@ -282,9 +270,9 @@ if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
     # Create enhanced risk scale
     st.write("**Risk Assessment Scale:**")
     risk_fig, current_risk = create_risk_scale(probability)
-    st.plotly_chart(risk_fig, use_container_width=True)
+    st.pyplot(risk_fig)
     
-    # Risk interpretation using native Streamlit components
+    # Risk interpretation
     risk_text = {
         "Very Low": "Your risk is very low. Keep up healthy habits!",
         "Low": "You have slightly elevated risk. Consider lifestyle improvements.",
@@ -293,48 +281,8 @@ if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
         "Very High": "Very high risk. Please consult a doctor soon."
     }
     
-    with st.container():
-        st.subheader(f"{current_risk['label']} Risk ({probability:.1%})")
-        st.write(risk_text[current_risk['label']])
-        
-        # Create risk scale visualization using Matplotlib
-        st.write("**RISK SCALE**")
-        
-        # Create gradient color scale
-        colors = ["#4CAF50", "#8BC34A", "#FFC107", "#FF9800", "#F44336"]
-        cmap = mcolors.LinearSegmentedColormap.from_list("risk_scale", colors)
-        
-        # Create figure
-        fig, ax = plt.subplots(figsize=(10, 1))
-        fig.set_facecolor('none')
-        ax.set_facecolor('none')
-        
-        # Create gradient bar
-        gradient = np.linspace(0, 1, 256).reshape(1, -1)
-        gradient = np.vstack((gradient, gradient))
-        ax.imshow(gradient, aspect='auto', cmap=cmap, extent=[0, 100, 0, 1])
-        
-        # Add current risk marker
-        ax.plot(probability * 100, 0.5, 'ko', markersize=8)
-        
-        # Set axis properties
-        ax.set_xlim(0, 100)
-        ax.set_ylim(0, 1)
-        ax.set_xticks([0, 20, 40, 60, 80, 100])
-        ax.set_xticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
-        ax.set_yticks([])
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(False)
-        ax.spines['bottom'].set_visible(True)
-        
-        # Add labels
-        ax.text(0, 1.5, "Low", ha='left', va='center', fontsize=10)
-        ax.text(100, 1.5, "High", ha='right', va='center', fontsize=10)
-        ax.text(probability * 100, -0.5, f"Your risk: {probability:.1%}", 
-                ha='center', va='top', fontsize=12, fontweight='bold')
-        
-        st.pyplot(fig, use_container_width=True)
+    st.subheader(f"{current_risk['label']} Risk ({probability:.1%})")
+    st.write(risk_text[current_risk['label']])
     
     # Risk-specific recommendations
     st.subheader('Clinical Recommendations')
@@ -395,26 +343,19 @@ if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
                 </div>
                 """, unsafe_allow_html=True)
         
-        # Create horizontal bar chart with Plotly
+        # Create horizontal bar chart with Matplotlib
         st.subheader("Risk Factor Importance")
         
         impact_df = impact_df.sort_values('Importance', ascending=True)
-        fig = go.Figure(go.Bar(
-            x=impact_df['Importance'],
-            y=impact_df['Feature'],
-            orientation='h',
-            marker=dict(color='#4CAF50')
-        ))
         
-        fig.update_layout(
-            height=500,
-            title='Feature Importance',
-            xaxis_title='Importance Score',
-            yaxis_title='Feature',
-            margin=dict(l=150, r=50, t=50, b=50)
-        )
+        # Create horizontal bar chart
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(impact_df['Feature'], impact_df['Importance'], color='#4CAF50')
+        ax.set_xlabel('Importance Score')
+        ax.set_title('Feature Importance')
+        plt.tight_layout()
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.pyplot(fig)
         
     except Exception as e:
         st.error(f"Feature importance data unavailable: {str(e)}")
