@@ -2,9 +2,13 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from sklearn.pipeline import Pipeline
 import os
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+st.set_page_config(page_title="Clinical Diabetes Risk Assessment", page_icon="🩺", layout="wide")
 
 # Load model and features with robust path handling
 @st.cache_resource
@@ -41,9 +45,8 @@ CLINICAL_DEFINITIONS = {
 }
 
 # App title with improved styling
-st.set_page_config(page_title="Clinical Diabetes Risk Assessment", page_icon="🩺", layout="wide")
 st.title('🩺 Clinical Diabetes Risk Assessment')
-st.write("""
+st.markdown("""
 <div style='font-size:18px; padding-bottom:15px'>
 <i>Interpretable ML model predicting diabetes risk using routine clinical measurements</i>
 </div>
@@ -156,62 +159,73 @@ for i, (title, value, color) in enumerate(metrics):
         </div>
         """, unsafe_allow_html=True)
 
-# Enhanced risk visualization function - FIXED VERSION
-def create_risk_meter(probability):
-    # Create compact figure
-    fig, ax = plt.subplots(figsize=(9, 3), facecolor='#f8f9fa')
-    fig.subplots_adjust(top=0.7, bottom=0.3)
-    
-    # Risk categories with enhanced descriptions
+def create_risk_scale(probability):
+    # Simple, clear risk levels
     risk_levels = [
-        {"name": "Very Low", "min": 0.0, "max": 0.2, "color": "#4CAF50", "icon": "✅"},
-        {"name": "Low", "min": 0.2, "max": 0.4, "color": "#8BC34A", "icon": "🟢"},
-        {"name": "Moderate", "min": 0.4, "max": 0.6, "color": "#FFC107", "icon": "🟠"},
-        {"name": "High", "min": 0.6, "max": 0.8, "color": "#FF9800", "icon": "🔴"},
-        {"name": "Very High", "min": 0.8, "max": 1.0, "color": "#F44336", "icon": "⚠️"}
+        {"min": 0, "max": 0.2, "label": "Very Low", "color": "#4CAF50"},
+        {"min": 0.2, "max": 0.4, "label": "Low", "color": "#8BC34A"},
+        {"min": 0.4, "max": 0.6, "label": "Moderate", "color": "#FFC107"},
+        {"min": 0.6, "max": 0.8, "label": "High", "color": "#FF9800"},
+        {"min": 0.8, "max": 1.0, "label": "Very High", "color": "#F44336"}
     ]
     
-    # Find current risk level
-    current_risk = next((level for level in risk_levels if level["min"] <= probability < level["max"]), risk_levels[-1])
+    current_risk = next((level for level in risk_levels 
+                       if level["min"] <= probability < level["max"]), risk_levels[-1])
     
-    # Create gauge background
+    # Create a super simple bar chart
+    fig = go.Figure()
+    
+    # Add main risk bar
+    fig.add_trace(go.Bar(
+        x=["Your Risk"],
+        y=[probability*100],
+        marker_color=current_risk["color"],
+        width=0.6,
+        text=[f"{probability:.1%}"],
+        textposition='outside',
+        textfont=dict(size=24, color=current_risk["color"]),
+        hoverinfo='none'
+    ))
+    
+    # Add reference lines
     for level in risk_levels:
-        ax.barh(0, level["max"] - level["min"], left=level["min"], 
-                height=0.3, color=level["color"], alpha=0.8)
-        
-        # Add risk level name at the bottom
-        center = (level["min"] + level["max"]) / 2
-        ax.text(center, -0.2, level["name"], 
-                ha='center', va='center', fontsize=9, fontweight='bold')
+        fig.add_shape(
+            type="line",
+            x0=-0.5, x1=0.5,
+            y0=level["min"]*100, y1=level["min"]*100,
+            line=dict(color="#AAAAAA", width=1, dash="dot")
+        )
     
-    # Add threshold markers
-    for threshold in [0.2, 0.4, 0.6, 0.8]:
-        ax.plot([threshold, threshold], [-0.05, 0], 'k-', linewidth=1, alpha=0.5)
+    # Add risk level labels on right side
+    fig.add_trace(go.Scatter(
+        x=[0.5]*5,
+        y=[10, 30, 50, 70, 90],
+        text=[level["label"] for level in risk_levels],
+        mode="text",
+        textfont=dict(color=[level["color"] for level in risk_levels], size=14),
+        showlegend=False,
+        hoverinfo='none'
+    ))
     
-    # Add current risk indicator
-    ax.plot([probability, probability], [0, 0.3], 'k-', linewidth=2)
-    ax.plot(probability, 0.3, 'k^', markersize=12)
+    # Clean, minimal layout
+    fig.update_layout(
+        height=400,
+        yaxis=dict(
+            title="Risk Percentage",
+            range=[0, 100],
+            tickvals=[0, 20, 40, 60, 80, 100],
+            ticktext=["0%", "20%", "40%", "60%", "80%", "100%"],
+            tickfont=dict(size=12),
+            titlefont=dict(size=14)
+        ),
+        xaxis=dict(visible=False),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(t=40, b=40, l=40, r=120),
+        hovermode=False
+    )
     
-    # Add current risk value
-    ax.text(probability, 0.35, f'Current Risk: {probability:.1%}', 
-            ha='center', va='center', fontsize=10, fontweight='bold',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor='black'))
-    
-    # Add clinical interpretation
-    ax.text(0.5, 0.5, f"CLINICAL INTERPRETATION: {current_risk['name'].upper()} RISK {current_risk['icon']}", 
-            ha='center', va='center', fontsize=11, fontweight='bold',
-            bbox=dict(boxstyle='round', facecolor=current_risk['color'], alpha=0.2))
-    
-    # Add risk scale label
-    ax.text(0, 0.45, "LOW RISK", ha='left', va='center', fontsize=8, color='#4CAF50')
-    ax.text(1, 0.45, "HIGH RISK", ha='right', va='center', fontsize=8, color='#F44336')
-    
-    # Remove axes decoration
-    ax.set_xlim(0, 1)
-    ax.set_ylim(-0.3, 0.6)
-    ax.axis('off')
-    
-    return fig
+    return fig, current_risk
 
 # Predict and display results
 if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
@@ -222,27 +236,27 @@ if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
     # Enhanced risk stratification
     if probability < 0.2:
         risk_category = "Very Low Risk"
-        color = "#4CAF50"  # Green
+        color = "#2ecc71"  # Green
         emoji = "✅"
         risk_level = 1
     elif probability < 0.4:
         risk_category = "Low Risk"
-        color = "#8BC34A"  # Light green
+        color = "#27ae60"  # Light green
         emoji = "🟢"
         risk_level = 2
     elif probability < 0.6:
         risk_category = "Moderate Risk"
-        color = "#FFC107"  # Amber
+        color = "#f39c12"  # Amber
         emoji = "🟠"
         risk_level = 3
     elif probability < 0.8:
         risk_category = "High Risk"
-        color = "#FF9800"  # Orange
+        color = "#e74c3c"  # Red
         emoji = "🔴"
         risk_level = 4
     else:
         risk_category = "Very High Risk"
-        color = "#F44336"  # Red
+        color = "#c0392b"  # Dark red
         emoji = "⚠️"
         risk_level = 5
     
@@ -265,10 +279,62 @@ if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
     </div>
     """, unsafe_allow_html=True)
     
-    # Create enhanced risk meter
+    # Create enhanced risk scale
     st.write("**Risk Assessment Scale:**")
-    risk_fig = create_risk_meter(probability)
-    st.pyplot(risk_fig)
+    risk_fig, current_risk = create_risk_scale(probability)
+    st.plotly_chart(risk_fig, use_container_width=True)
+    
+    # Risk interpretation using native Streamlit components
+    risk_text = {
+        "Very Low": "Your risk is very low. Keep up healthy habits!",
+        "Low": "You have slightly elevated risk. Consider lifestyle improvements.",
+        "Moderate": "Moderate risk detected. We recommend preventive actions.",
+        "High": "High risk identified. Medical consultation advised.",
+        "Very High": "Very high risk. Please consult a doctor soon."
+    }
+    
+    with st.container():
+        st.subheader(f"{current_risk['label']} Risk ({probability:.1%})")
+        st.write(risk_text[current_risk['label']])
+        
+        # Create risk scale visualization using Matplotlib
+        st.write("**RISK SCALE**")
+        
+        # Create gradient color scale
+        colors = ["#4CAF50", "#8BC34A", "#FFC107", "#FF9800", "#F44336"]
+        cmap = mcolors.LinearSegmentedColormap.from_list("risk_scale", colors)
+        
+        # Create figure
+        fig, ax = plt.subplots(figsize=(10, 1))
+        fig.set_facecolor('none')
+        ax.set_facecolor('none')
+        
+        # Create gradient bar
+        gradient = np.linspace(0, 1, 256).reshape(1, -1)
+        gradient = np.vstack((gradient, gradient))
+        ax.imshow(gradient, aspect='auto', cmap=cmap, extent=[0, 100, 0, 1])
+        
+        # Add current risk marker
+        ax.plot(probability * 100, 0.5, 'ko', markersize=8)
+        
+        # Set axis properties
+        ax.set_xlim(0, 100)
+        ax.set_ylim(0, 1)
+        ax.set_xticks([0, 20, 40, 60, 80, 100])
+        ax.set_xticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
+        ax.set_yticks([])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(True)
+        
+        # Add labels
+        ax.text(0, 1.5, "Low", ha='left', va='center', fontsize=10)
+        ax.text(100, 1.5, "High", ha='right', va='center', fontsize=10)
+        ax.text(probability * 100, -0.5, f"Your risk: {probability:.1%}", 
+                ha='center', va='top', fontsize=12, fontweight='bold')
+        
+        st.pyplot(fig, use_container_width=True)
     
     # Risk-specific recommendations
     st.subheader('Clinical Recommendations')
@@ -329,16 +395,26 @@ if st.button('Assess Diabetes Risk', type="primary", use_container_width=True):
                 </div>
                 """, unsafe_allow_html=True)
         
-        # Create horizontal bar chart
+        # Create horizontal bar chart with Plotly
         st.subheader("Risk Factor Importance")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        impact_df = impact_df.sort_values('Importance', ascending=True)
         
-        bars = ax.barh(impact_df['Feature'], impact_df['Importance'], color='#4CAF50')
-        ax.set_xlabel('Importance Score')
-        ax.set_title('Feature Importance')
-        plt.tight_layout()
-        st.pyplot(fig)
+        impact_df = impact_df.sort_values('Importance', ascending=True)
+        fig = go.Figure(go.Bar(
+            x=impact_df['Importance'],
+            y=impact_df['Feature'],
+            orientation='h',
+            marker=dict(color='#4CAF50')
+        ))
+        
+        fig.update_layout(
+            height=500,
+            title='Feature Importance',
+            xaxis_title='Importance Score',
+            yaxis_title='Feature',
+            margin=dict(l=150, r=50, t=50, b=50)
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
         
     except Exception as e:
         st.error(f"Feature importance data unavailable: {str(e)}")
