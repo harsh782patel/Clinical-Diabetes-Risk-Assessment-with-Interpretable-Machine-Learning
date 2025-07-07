@@ -1,4 +1,4 @@
-# Clinical-Diabetes-Risk-Assessment-with-Interpretable-Machine-Learning
+# Clinical Diabetes Risk Assessment with Interpretable Machine Learning
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://harsh782patel-clinical-diabete-diabetes-streamlit-appapp-d8l0bl.streamlit.app/)
 
