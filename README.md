@@ -111,7 +111,7 @@ python src/train.py --n_estimators 300 --max_depth 15
 
 ## Key Results
 ### Web Application Features
-![Web Application Features](reports/shap_summary.png) 
+![Web Application Features](webapp-features.png) 
 *Clinical dashboard with (A) input parameters, (B) risk visualization, (C) recommendations*
 
 ### Model Performance Comparison
