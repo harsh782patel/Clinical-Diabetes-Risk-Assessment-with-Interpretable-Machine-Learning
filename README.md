@@ -112,7 +112,7 @@ python src/train.py --n_estimators 300 --max_depth 15
 ## Key Results
 ### Web Application Features
 ![Web Application Features](webapp-features.png) 
-*Clinical dashboard with (A) input parameters, (B) risk visualization, (C) recommendations*
+*Clinical dashboard with input parameters, risk visualization, recommendations*
 
 ### Model Performance Comparison
 | Model          | ROC-AUC | Accuracy | Precision | Recall | F1-Score |
